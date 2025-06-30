@@ -35,7 +35,7 @@
       <th>Aksi</th>
     </tr>
   </thead>
-  <tbody id="tableBody">
+  <tbody id="tableBody"><tr><td colspan="7" id="statusMsg" style="color: gray;">⏳ Memuat data...</td></tr>
     <tr><td colspan="7">Memuat data...</td></tr>
   </tbody>
 </table>
@@ -69,9 +69,18 @@ function signalRow(coin, price, ema, breakout, ratio, signalMsg){
 }
 
 async function load(){
+  const status = document.getElementById("statusMsg");
+  if (status) status.innerText = "⏳ Memuat data...";
  const tbody = document.getElementById("tableBody");
  tbody.innerHTML = "";
- let res = await fetch("https://indodax.com/api/summaries");
+ let res;
+  try {
+    res = await fetch("https://indodax.com/api/summaries");
+    if (!res.ok) throw new Error("Status bukan 200");
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:red;">⚠️ Gagal mengambil data dari Indodax: ${e.message}</td></tr>`;
+    return;
+  }
  let data = await res.json();
  let volList = [];
  for(let [pair,v] of Object.entries(data.tickers)){
@@ -116,6 +125,7 @@ async function load(){
    else if(passed == 1) sinyal="🔎 WATCHLIST";
 
    if(passed >= 1){
+     if (status) status.remove();
      tbody.appendChild(signalRow(pair.toUpperCase(), price, emaPass?"✅":"❌", breakout?"✅":"❌", rasioBS, sinyal));
    }
  }
