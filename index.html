@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Monitor Sinyal Scalping (Longgar)</title>
+  <title>Monitor Sinyal Scalping (Potensi Longgar)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { font-family: Arial, sans-serif; background: #111; color: #eee; padding: 20px; }
@@ -44,6 +44,7 @@
 const BOT = "7844418185:AAGNywzrPEK2Z6vVEmy11d_8T2G0HDndQJ4";
 const CHAT = "5991757052";
 let prev = {};
+let sent = {};
 
 function sendTelegram(msg){
  fetch(`https://api.telegram.org/bot${BOT}/sendMessage`,{
@@ -95,18 +96,28 @@ async function load(){
    let emaPass = price > ema5 && ema5 > ema20;
    let breakout = price > ema20;
    let rasioBS = coinData.vol_sell>0 ? (coinData.vol_buy/coinData.vol_sell).toFixed(2):"∞";
-   let ratioPass = parseFloat(rasioBS)>=1.5;
+   let ratioPass = parseFloat(rasioBS)>=1.2;
 
    let sinyal = "Tunggu";
-   if(emaPass && breakout && ratioPass){
-     sinyal = "✅ STRONG BUY";
-     document.getElementById("alertSound").play();
-     sendTelegram(`📈 STRONG BUY\n${pair.toUpperCase()}\nHarga: ${price}\nRasio B/S: ${rasioBS}`);
-   }
-   else if((emaPass&&ratioPass)||(breakout&&ratioPass)) sinyal="⚠️ MODERATE BUY";
-   else if(emaPass||breakout||ratioPass) sinyal="🔎 WATCHLIST";
+   let passed = 0;
+   if(emaPass) passed++;
+   if(breakout) passed++;
+   if(ratioPass) passed++;
 
-   tbody.appendChild(signalRow(pair.toUpperCase(), price, emaPass?"✅":"❌", breakout?"✅":"❌", rasioBS, sinyal));
+   if(passed >= 3){
+     sinyal = "✅ STRONG BUY";
+     if(!sent[pair]){
+       document.getElementById("alertSound").play();
+       sendTelegram(`📈 STRONG BUY\n${pair.toUpperCase()}\nHarga: ${price}\nRasio B/S: ${rasioBS}`);
+       sent[pair] = true;
+     }
+   }
+   else if(passed == 2) sinyal="⚠️ MODERATE BUY";
+   else if(passed == 1) sinyal="🔎 WATCHLIST";
+
+   if(passed >= 1){
+     tbody.appendChild(signalRow(pair.toUpperCase(), price, emaPass?"✅":"❌", breakout?"✅":"❌", rasioBS, sinyal));
+   }
  }
 }
 
